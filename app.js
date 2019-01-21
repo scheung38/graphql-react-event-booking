@@ -5,23 +5,39 @@ const { buildSchema } = require('graphql')
 
 const app = express();
 
-app.use(bodyParser.json());
-
-
-
 // app.get('/', (err, res) => {
 //     res.send('Hello World!');
 // })
 
-app.use('graphql', graphqlHttp({
+const events = []; // temp variable
+
+app.use(bodyParser.json());
+
+app.use('/graphql', graphqlHttp({
     schema: buildSchema(`
+
+    type Event {
+        _id: ID!
+        title:  String!
+        description: String!
+        price: Float!
+        date: String!
+    }
+
+    input EventInput {
+        title: String!
+        description: String!
+        price: Float!
+        date: String!
+    }
+     
     type RootQuery {
-        events: [String!]!
+        events: [Event!]!
 
     }
 
     type RootMutation {
-        createEvent(name: String): String
+        createEvent(eventInput: EventInput): Event
 
     }
 
@@ -32,15 +48,89 @@ app.use('graphql', graphqlHttp({
     `),
     rootValue: {
         events: () => {
-            return ['Romantic Cooking', 'Sailing', 'All-Night Coding'];
+            return events;
         },
-        createEvent:(args) => {
-            const eventName = args.name;
-            return eventName;
+        createEvent: (args) => {
+            const event = {
+                _id: Math.random().toString(),
+                title: args.eventInput.title,
+                description: args.eventInput.description,
+                price: +args.eventInput.price,
+                date: args.date
+            };
+            console.log(args);
+            events.push(event);
+
+            return event;
+            // const eventName = args.name;
+            // return eventName;
         }
     },
     graphiql: true
-}));
+})
+);
 
 
 app.listen(3000);
+
+
+// Examples of queries
+// query {
+//     events
+//   }
+
+//   {
+//     "data": {
+//       "events": [
+//         "Romantic Cooking",
+//         "Sailing",
+//         "All-Night Coding"
+//       ]
+//     }
+//   }
+
+
+// mutation {
+//     createEvent(name: "Bagua")
+//   }
+
+//   {
+//     "data": {
+//       "createEvent": "Bagua"
+//     }
+//   }
+
+
+// mutation {
+// createEvent(eventInput: { title: "A test", description: "Do", price: 9.99, date: "2019-01-21T22:43:02.078Z" })
+// {
+//   title
+//   description
+//  }
+// }
+
+// {
+//    "data": {
+//      "createEvent": {
+//      "title": "A test",
+//      "description": "Do"
+//   }
+//  }
+// }
+
+// mutation {
+// createEvent(eventInput: { title: "A test", description: "Do", price: 9.99, date: "2019-01-21T22:43:02.078Z" })
+// {
+//   title
+//   price
+// }
+// }
+
+// {
+//     "data": {
+//       "createEvent": {
+//       "title": "A test",
+//       "price": 9.99
+//         }
+//     }
+// }
